@@ -1,0 +1,9 @@
+# Android build artifacts
+android/.gradle/
+android/.idea/
+android/build/
+android/app/build/
+android/gradle/wrapper/
+android/gradlew
+android/gradlew.bat
+android/local.properties
