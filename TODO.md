@@ -72,6 +72,11 @@
 - [ ] Set up CI/CD pipeline for automated builds
 - [ ] Update Compose BOM from `2024.02.00` to latest stable
 
+## Hardware / Physical Product
+
+- [ ] Design a handlebar mount for the Puck.js device
+- [ ] Research IP rating of the Puck.js silicone case — determine if it's sufficient for riding in rain or if additional waterproofing is needed
+
 ## Documentation
 
 - [ ] Add user guide with setup instructions
