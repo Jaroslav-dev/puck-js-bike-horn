@@ -43,14 +43,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @OptIn(ExperimentalPermissionsApi::class)
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        // Start and bind to BLE foreground service
+    private fun startBleService() {
+        if (serviceBound) return
         val serviceIntent = Intent(this, BleConnectionService::class.java)
         startForegroundService(serviceIntent)
         bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
+    }
+
+    @OptIn(ExperimentalPermissionsApi::class)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
         setContent {
             BikeHornTheme {
@@ -68,6 +70,13 @@ class MainActivity : ComponentActivity() {
                 if (!permissionState.allPermissionsGranted) {
                     androidx.compose.runtime.LaunchedEffect(Unit) {
                         permissionState.launchMultiplePermissionRequest()
+                    }
+                }
+
+                // Start BLE service only after permissions are granted
+                if (permissionState.allPermissionsGranted) {
+                    androidx.compose.runtime.LaunchedEffect(Unit) {
+                        startBleService()
                     }
                 }
 

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Bike bell icon -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,30 C44,30 36,38 36,48 L36,58 L32,62 L32,66 L76,66 L76,62 L72,58 L72,48 C72,38 64,30 54,30 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M48,68 C48,72 50.7,75 54,75 C57.3,75 60,72 60,68 Z" />
+</vector>
