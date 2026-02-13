@@ -42,11 +42,17 @@
 
 ## Crash Detection
 
+- [ ] Improve crash detection by combining gyroscope + accelerometer data (rotation + g-force) to reduce false positives from potholes/bumps
 - [ ] Add crash event history log (date, time, location, g-force)
 - [ ] Add GPS track logging during rides for crash location context
 - [ ] Add option to send crash alert via app notification (not just SMS)
 - [ ] Consider adding multiple emergency contacts support
 - [ ] Add configurable crash debounce time in settings (currently hardcoded 5s)
+
+## NFC Features
+
+- [ ] Tap-to-pair: use NFC to instantly open the app and connect to the Puck.js (skip BLE scanning)
+- [ ] Emergency info tag: after a crash is detected, bystanders can tap the Puck.js with their phone to see emergency contact info, medical details, and crash location
 
 ## Firmware
 
