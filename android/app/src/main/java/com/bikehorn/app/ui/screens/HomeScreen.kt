@@ -17,6 +17,8 @@ import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothConnected
 import androidx.compose.material.icons.filled.BluetoothSearching
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SpeakerPhone
+import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,6 +44,7 @@ fun HomeScreen(
     deviceName: String?,
     lastEvent: String?,
     scannedDevices: List<ScannedDevice>,
+    bluetoothSpeakerName: String?,
     onScan: () -> Unit,
     onConnect: (ScannedDevice) -> Unit,
     onDisconnect: () -> Unit,
@@ -116,6 +119,53 @@ fun HomeScreen(
                         connectionState == ConnectionState.CONNECTING
                     ) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Audio output indicator — shows whether sound routes to BT speaker or phone
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (bluetoothSpeakerName != null)
+                        MaterialTheme.colorScheme.primaryContainer
+                    else
+                        MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(
+                        imageVector = if (bluetoothSpeakerName != null)
+                            Icons.Default.Speaker
+                        else
+                            Icons.Default.SpeakerPhone,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                    )
+                    Column {
+                        Text(
+                            text = if (bluetoothSpeakerName != null)
+                                "Audio: $bluetoothSpeakerName"
+                            else
+                                "Audio: Phone speaker",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        // Warn user if no BT speaker — horn will be quiet
+                        if (bluetoothSpeakerName == null) {
+                            Text(
+                                text = "Connect a Bluetooth speaker for louder horn",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }

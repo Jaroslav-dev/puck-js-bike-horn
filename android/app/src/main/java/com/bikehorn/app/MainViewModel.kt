@@ -2,6 +2,11 @@ package com.bikehorn.app
 
 import android.app.Application
 import android.bluetooth.BluetoothDevice
+import android.media.AudioDeviceCallback
+import android.media.AudioDeviceInfo
+import android.media.AudioManager
+import android.os.Handler
+import android.os.Looper
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.bikehorn.app.ble.BleManager
@@ -24,8 +29,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val prefsRepo = PreferencesRepo(application)
     val soundManager = SoundManager(application)
+    private val audioManager = application.getSystemService(AudioManager::class.java)
 
     private var bleManager: BleManager? = null
+
+    // Tracks whether a Bluetooth A2DP speaker is connected for audio output
+    private val _bluetoothSpeakerName = MutableStateFlow<String?>(null)
+    val bluetoothSpeakerName: StateFlow<String?> = _bluetoothSpeakerName
+
+    // Callback to detect Bluetooth audio devices connecting/disconnecting
+    private val audioDeviceCallback = object : AudioDeviceCallback() {
+        override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) {
+            updateBluetoothSpeakerState()
+        }
+        override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) {
+            updateBluetoothSpeakerState()
+        }
+    }
+
+    init {
+        // Check initial state and listen for changes
+        updateBluetoothSpeakerState()
+        audioManager.registerAudioDeviceCallback(audioDeviceCallback, Handler(Looper.getMainLooper()))
+    }
+
+    /** Finds the first connected Bluetooth audio output device (A2DP speaker) */
+    private fun updateBluetoothSpeakerState() {
+        val btSpeaker = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+            .firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP }
+        _bluetoothSpeakerName.value = btSpeaker?.productName?.toString()
+    }
 
     val settings: StateFlow<AppSettings> = prefsRepo.settings
         .stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings())
@@ -143,6 +176,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     override fun onCleared() {
+        // Unregister BT audio listener and release sound resources
+        audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
         soundManager.release()
         super.onCleared()
     }

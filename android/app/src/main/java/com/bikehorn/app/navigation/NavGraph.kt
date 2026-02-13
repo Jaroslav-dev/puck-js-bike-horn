@@ -27,6 +27,8 @@ fun NavGraph(
     val lastEvent by viewModel.lastEvent.collectAsState()
     val scannedDevices by viewModel.scannedDevices.collectAsState()
     val settings by viewModel.settings.collectAsState()
+    // Name of connected BT speaker, or null if audio routes to phone speaker
+    val bluetoothSpeakerName by viewModel.bluetoothSpeakerName.collectAsState()
 
     NavHost(navController = navController, startDestination = Routes.HOME) {
         composable(Routes.HOME) {
@@ -35,6 +37,7 @@ fun NavGraph(
                 deviceName = deviceName,
                 lastEvent = lastEvent,
                 scannedDevices = scannedDevices,
+                bluetoothSpeakerName = bluetoothSpeakerName,
                 onScan = viewModel::startScan,
                 onConnect = { viewModel.connect(it.device) },
                 onDisconnect = viewModel::disconnect,
