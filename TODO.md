@@ -36,6 +36,7 @@
 
 ## Sound System
 
+- [x] Detect connected Bluetooth speaker and show audio output status on HomeScreen
 - [ ] Support user-uploaded custom sound files (pick from device storage)
 - [ ] Add volume control per sound assignment
 - [ ] Add sound duration preview indicator
