@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothConnected
 import androidx.compose.material.icons.filled.BluetoothSearching
+import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SpeakerPhone
 import androidx.compose.material.icons.filled.Speaker
@@ -45,6 +46,7 @@ fun HomeScreen(
     lastEvent: String?,
     scannedDevices: List<ScannedDevice>,
     bluetoothSpeakerName: String?,
+    isBluetoothEnabled: Boolean,
     onScan: () -> Unit,
     onConnect: (ScannedDevice) -> Unit,
     onDisconnect: () -> Unit,
@@ -170,12 +172,48 @@ fun HomeScreen(
                 }
             }
 
+            // Warning when Bluetooth is turned off
+            if (!isBluetoothEnabled) {
+                Spacer(Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Icon(
+                            Icons.Default.BluetoothDisabled,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                        Text(
+                            text = "Bluetooth is off. Enable it in system settings to scan.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                    }
+                }
+            }
+
             Spacer(Modifier.height(16.dp))
 
             // Action buttons
             when (connectionState) {
                 ConnectionState.DISCONNECTED -> {
-                    Button(onClick = onScan, modifier = Modifier.fillMaxWidth()) {
+                    // Disable scan button when Bluetooth is off
+                    Button(
+                        onClick = onScan,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = isBluetoothEnabled,
+                    ) {
                         Text("Scan for Puck.js")
                     }
                 }

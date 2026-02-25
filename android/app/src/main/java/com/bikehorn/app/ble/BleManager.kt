@@ -81,14 +81,18 @@ class BleManager(private val context: Context) {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             val device = result.device
             val name = device.name ?: return
+            Log.d(TAG, "Scan found device: '$name' (${device.address})")
+            // Only show devices with "Puck" in the name (e.g. "Puck.js ABCD")
+            if (!name.contains("Puck", ignoreCase = true)) return
             val existing = _scannedDevices.value
             if (existing.none { it.address == device.address }) {
+                Log.i(TAG, "Found Puck.js device: $name (${device.address})")
                 _scannedDevices.value = existing + ScannedDevice(name, device.address, device)
             }
         }
 
         override fun onScanFailed(errorCode: Int) {
-            Log.e(TAG, "Scan failed: $errorCode")
+            Log.e(TAG, "Scan failed: errorCode=$errorCode")
             _connectionState.value = ConnectionState.DISCONNECTED
         }
     }
@@ -165,18 +169,25 @@ class BleManager(private val context: Context) {
     }
 
     fun startScan() {
-        val scanner = bluetoothAdapter?.bluetoothLeScanner ?: return
+        // Prevent starting a scan if one is already running (avoids SCAN_FAILED_ALREADY_STARTED)
+        if (_connectionState.value == ConnectionState.SCANNING) return
+
+        val scanner = bluetoothAdapter?.bluetoothLeScanner ?: run {
+            Log.e(TAG, "BLE scanner not available — is Bluetooth enabled?")
+            return
+        }
+
         _scannedDevices.value = emptyList()
         _connectionState.value = ConnectionState.SCANNING
+        Log.i(TAG, "Starting BLE scan (no UUID filter, matching Puck.js by name)")
 
-        val filter = ScanFilter.Builder()
-            .setServiceUuid(ParcelUuid(NUS_SERVICE_UUID))
-            .build()
+        // Scan without UUID filter — Puck.js doesn't always advertise NUS UUID in scan data.
+        // Devices are filtered by name in the scan callback instead.
         val settings = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .build()
 
-        scanner.startScan(listOf(filter), settings, scanCallback)
+        scanner.startScan(null, settings, scanCallback)
 
         // Stop scanning after 15 seconds
         scope.launch {
