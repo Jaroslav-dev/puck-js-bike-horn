@@ -120,22 +120,34 @@ class BleManager(private val context: Context) {
         }
 
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-            if (status != BluetoothGatt.GATT_SUCCESS) return
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                Log.e(TAG, "Service discovery failed with status: $status")
+                return
+            }
+
+            // Log all discovered services so we can verify NUS is present
+            gatt.services.forEach { service ->
+                Log.d(TAG, "Discovered service: ${service.uuid}")
+            }
 
             val service = gatt.getService(NUS_SERVICE_UUID) ?: run {
-                Log.e(TAG, "NUS service not found")
+                Log.e(TAG, "NUS service not found on device")
                 return
             }
             val txChar = service.getCharacteristic(NUS_TX_UUID) ?: run {
-                Log.e(TAG, "TX characteristic not found")
+                Log.e(TAG, "TX characteristic not found in NUS service")
                 return
             }
 
+            Log.i(TAG, "NUS service found, subscribing to TX notifications")
             gatt.setCharacteristicNotification(txChar, true)
             val descriptor = txChar.getDescriptor(CCC_DESCRIPTOR_UUID)
             if (descriptor != null) {
                 descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                 gatt.writeDescriptor(descriptor)
+                Log.i(TAG, "Wrote CCC descriptor to enable notifications")
+            } else {
+                Log.e(TAG, "CCC descriptor not found on TX characteristic")
             }
         }
 
@@ -146,6 +158,7 @@ class BleManager(private val context: Context) {
         ) {
             if (characteristic.uuid == NUS_TX_UUID) {
                 val chunk = characteristic.getStringValue(0)
+                Log.d(TAG, "Received BLE data: $chunk")
                 processChunk(chunk)
             }
         }
@@ -160,9 +173,14 @@ class BleManager(private val context: Context) {
             val line = messageBuffer.substring(0, newlineIdx).trim()
             messageBuffer.delete(0, newlineIdx + 1)
             if (line.isNotEmpty()) {
+                Log.d(TAG, "Complete message: $line")
                 _messages.tryEmit(line)
-                PuckJsProtocol.parse(line)?.let { event ->
+                val event = PuckJsProtocol.parse(line)
+                if (event != null) {
+                    Log.i(TAG, "Parsed event: $event")
                     _events.tryEmit(event)
+                } else {
+                    Log.w(TAG, "Failed to parse message: $line")
                 }
             }
         }
