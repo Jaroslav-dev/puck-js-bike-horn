@@ -3,17 +3,17 @@ package com.bikehorn.app.data
 import com.bikehorn.app.R
 
 enum class ButtonPattern(val label: String) {
-    SHORT_PRESS("Short Press"),
-    LONG_PRESS("Long Press"),
-    VERY_LONG_PRESS("Very Long Press"),
-    REPEATED_PRESS("Repeated Press");
+    SINGLE_PRESS("1 Tap"),
+    DOUBLE_PRESS("2 Taps"),
+    TRIPLE_PRESS("3 Taps"),
+    LONG_PRESS("Long Press (2s)");
 
     companion object {
         fun fromEventType(type: String): ButtonPattern? = when (type) {
-            "short_press" -> SHORT_PRESS
+            "single_press" -> SINGLE_PRESS
+            "double_press" -> DOUBLE_PRESS
+            "triple_press" -> TRIPLE_PRESS
             "long_press" -> LONG_PRESS
-            "very_long_press" -> VERY_LONG_PRESS
-            "repeated_press" -> REPEATED_PRESS
             else -> null
         }
     }
@@ -39,12 +39,15 @@ data class SoundAssignment(
 
 data class AppSettings(
     val assignments: Map<ButtonPattern, Int> = mapOf(
-        ButtonPattern.SHORT_PRESS to 1,
-        ButtonPattern.LONG_PRESS to 2,
-        ButtonPattern.VERY_LONG_PRESS to 3,
-        ButtonPattern.REPEATED_PRESS to 3,
+        ButtonPattern.SINGLE_PRESS to 1,
+        ButtonPattern.DOUBLE_PRESS to 2,
+        ButtonPattern.TRIPLE_PRESS to 3,
+        ButtonPattern.LONG_PRESS to 4,
     ),
     val emergencyContact: String = "",
     val crashThreshold: Float = 3.0f,
     val countdownDuration: Int = 10,
+    // Sounds played when the accelerometer detects forward acceleration or braking
+    val accelerationSoundId: Int = 1,  // default: Bicycle Bell
+    val brakingSoundId: Int = 2,       // default: Tram Bell
 )

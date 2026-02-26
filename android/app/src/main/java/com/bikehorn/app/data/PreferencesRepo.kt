@@ -19,6 +19,9 @@ class PreferencesRepo(private val context: Context) {
         val EMERGENCY_CONTACT = stringPreferencesKey("emergency_contact")
         val CRASH_THRESHOLD = floatPreferencesKey("crash_threshold")
         val COUNTDOWN_DURATION = intPreferencesKey("countdown_duration")
+        // Motion detection sound assignments
+        val ACCELERATION_SOUND = intPreferencesKey("acceleration_sound")
+        val BRAKING_SOUND = intPreferencesKey("braking_sound")
         fun assignmentKey(pattern: ButtonPattern) =
             intPreferencesKey("assign_${pattern.name}")
     }
@@ -34,6 +37,8 @@ class PreferencesRepo(private val context: Context) {
             emergencyContact = prefs[Keys.EMERGENCY_CONTACT] ?: "",
             crashThreshold = prefs[Keys.CRASH_THRESHOLD] ?: 3.0f,
             countdownDuration = prefs[Keys.COUNTDOWN_DURATION] ?: 10,
+            accelerationSoundId = prefs[Keys.ACCELERATION_SOUND] ?: 1,
+            brakingSoundId = prefs[Keys.BRAKING_SOUND] ?: 2,
         )
     }
 
@@ -58,6 +63,18 @@ class PreferencesRepo(private val context: Context) {
     suspend fun setCountdownDuration(seconds: Int) {
         context.dataStore.edit { prefs ->
             prefs[Keys.COUNTDOWN_DURATION] = seconds
+        }
+    }
+
+    suspend fun setAccelerationSound(soundId: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.ACCELERATION_SOUND] = soundId
+        }
+    }
+
+    suspend fun setBrakingSound(soundId: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.BRAKING_SOUND] = soundId
         }
     }
 }

@@ -68,7 +68,7 @@ android/
 - **Foreground service** keeps BLE connection alive when app is backgrounded
 - **BLE service deferred until permissions granted** — avoids SecurityException crash on SDK 34
 - **DataStore** (not SharedPreferences) for async-safe preference persistence
-- **Accelerometer at 12.5Hz** on Puck.js for battery efficiency
+- **Accelerometer at 10Hz** on Puck.js for battery efficiency (LIS3DH valid rates: 1, 10, 25, 50, 100, 200, 400 Hz — 12.5 is not valid)
 - **Crash debounce** of 5s to prevent duplicate alerts from aftershocks
 
 ## Android Build

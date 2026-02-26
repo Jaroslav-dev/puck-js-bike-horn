@@ -3,11 +3,14 @@ package com.bikehorn.app.ble
 import org.json.JSONObject
 
 sealed class PuckEvent {
-    data object ShortPress : PuckEvent()
+    data object SinglePress : PuckEvent()
+    data object DoublePress : PuckEvent()
+    data object TriplePress : PuckEvent()
     data object LongPress : PuckEvent()
-    data object VeryLongPress : PuckEvent()
-    data object RepeatedPress : PuckEvent()
     data class Crash(val magnitude: Float) : PuckEvent()
+    // Motion events from accelerometer delta detection (Puck.js v2 only)
+    data object Acceleration : PuckEvent()
+    data object Braking : PuckEvent()
 }
 
 object PuckJsProtocol {
@@ -16,11 +19,13 @@ object PuckJsProtocol {
         return try {
             val json = JSONObject(message.trim())
             when (json.optString("t")) {
-                "short_press" -> PuckEvent.ShortPress
+                "single_press" -> PuckEvent.SinglePress
+                "double_press" -> PuckEvent.DoublePress
+                "triple_press" -> PuckEvent.TriplePress
                 "long_press" -> PuckEvent.LongPress
-                "very_long_press" -> PuckEvent.VeryLongPress
-                "repeated_press" -> PuckEvent.RepeatedPress
                 "crash" -> PuckEvent.Crash(json.optDouble("d", 0.0).toFloat())
+                "acceleration" -> PuckEvent.Acceleration
+                "braking" -> PuckEvent.Braking
                 else -> null
             }
         } catch (_: Exception) {

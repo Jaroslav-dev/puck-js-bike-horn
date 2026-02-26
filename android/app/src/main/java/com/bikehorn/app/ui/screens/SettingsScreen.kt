@@ -14,7 +14,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -22,12 +25,18 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.bikehorn.app.data.AppSettings
+import com.bikehorn.app.data.BUNDLED_SOUNDS
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +45,8 @@ fun SettingsScreen(
     onEmergencyContactChange: (String) -> Unit,
     onCrashThresholdChange: (Float) -> Unit,
     onCountdownDurationChange: (Int) -> Unit,
+    onAccelerationSoundChange: (Int) -> Unit,
+    onBrakingSoundChange: (Int) -> Unit,
     onBack: () -> Unit,
 ) {
     Scaffold(
@@ -133,6 +144,95 @@ fun SettingsScreen(
                     ) {
                         Text("5s", style = MaterialTheme.typography.bodySmall)
                         Text("30s", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+
+            // Motion Sounds
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "Motion Sounds",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Plays when the accelerometer detects pedaling or braking",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(12.dp))
+
+                    // Acceleration sound dropdown
+                    Text("Acceleration", style = MaterialTheme.typography.labelMedium)
+                    Spacer(Modifier.height(4.dp))
+                    val accelSound = BUNDLED_SOUNDS.find { it.id == settings.accelerationSoundId }
+                    var accelExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = accelExpanded,
+                        onExpandedChange = { accelExpanded = it },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        TextField(
+                            value = accelSound?.name ?: "Select sound",
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(accelExpanded) },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                        )
+                        ExposedDropdownMenu(
+                            expanded = accelExpanded,
+                            onDismissRequest = { accelExpanded = false },
+                        ) {
+                            BUNDLED_SOUNDS.forEach { sound ->
+                                DropdownMenuItem(
+                                    text = { Text(sound.name) },
+                                    onClick = {
+                                        onAccelerationSoundChange(sound.id)
+                                        accelExpanded = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Braking sound dropdown
+                    Text("Braking", style = MaterialTheme.typography.labelMedium)
+                    Spacer(Modifier.height(4.dp))
+                    val brakeSound = BUNDLED_SOUNDS.find { it.id == settings.brakingSoundId }
+                    var brakeExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = brakeExpanded,
+                        onExpandedChange = { brakeExpanded = it },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        TextField(
+                            value = brakeSound?.name ?: "Select sound",
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(brakeExpanded) },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                        )
+                        ExposedDropdownMenu(
+                            expanded = brakeExpanded,
+                            onDismissRequest = { brakeExpanded = false },
+                        ) {
+                            BUNDLED_SOUNDS.forEach { sound ->
+                                DropdownMenuItem(
+                                    text = { Text(sound.name) },
+                                    onClick = {
+                                        onBrakingSoundChange(sound.id)
+                                        brakeExpanded = false
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
             }

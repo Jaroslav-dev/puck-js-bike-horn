@@ -64,6 +64,8 @@ fun NavGraph(
                 onEmergencyContactChange = viewModel::setEmergencyContact,
                 onCrashThresholdChange = viewModel::setCrashThreshold,
                 onCountdownDurationChange = viewModel::setCountdownDuration,
+                onAccelerationSoundChange = viewModel::setAccelerationSound,
+                onBrakingSoundChange = viewModel::setBrakingSound,
                 onBack = { navController.popBackStack() },
             )
         }

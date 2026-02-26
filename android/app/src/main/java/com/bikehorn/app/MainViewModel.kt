@@ -134,21 +134,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun handleEvent(event: PuckEvent) {
         when (event) {
-            is PuckEvent.ShortPress -> {
-                _lastEvent.value = "Short Press"
-                playForPattern(ButtonPattern.SHORT_PRESS)
+            is PuckEvent.SinglePress -> {
+                _lastEvent.value = "1 Tap"
+                playForPattern(ButtonPattern.SINGLE_PRESS)
+            }
+            is PuckEvent.DoublePress -> {
+                _lastEvent.value = "2 Taps"
+                playForPattern(ButtonPattern.DOUBLE_PRESS)
+            }
+            is PuckEvent.TriplePress -> {
+                _lastEvent.value = "3 Taps"
+                playForPattern(ButtonPattern.TRIPLE_PRESS)
             }
             is PuckEvent.LongPress -> {
                 _lastEvent.value = "Long Press"
                 playForPattern(ButtonPattern.LONG_PRESS)
-            }
-            is PuckEvent.VeryLongPress -> {
-                _lastEvent.value = "Very Long Press"
-                playForPattern(ButtonPattern.VERY_LONG_PRESS)
-            }
-            is PuckEvent.RepeatedPress -> {
-                _lastEvent.value = "Repeated Press"
-                playForPattern(ButtonPattern.REPEATED_PRESS)
             }
             is PuckEvent.Crash -> {
                 _lastEvent.value = "Crash (${event.magnitude}g)"
@@ -158,6 +158,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     countdownSeconds = s.countdownDuration,
                     emergencyContact = s.emergencyContact,
                 )
+            }
+            // Play the user-assigned sound on motion events detected by the accelerometer
+            is PuckEvent.Acceleration -> {
+                _lastEvent.value = "Acceleration"
+                soundManager.play(settings.value.accelerationSoundId)
+            }
+            is PuckEvent.Braking -> {
+                _lastEvent.value = "Braking"
+                soundManager.play(settings.value.brakingSoundId)
             }
         }
     }
@@ -204,6 +213,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setCountdownDuration(seconds: Int) {
         viewModelScope.launch {
             prefsRepo.setCountdownDuration(seconds)
+        }
+    }
+
+    fun setAccelerationSound(soundId: Int) {
+        viewModelScope.launch {
+            prefsRepo.setAccelerationSound(soundId)
+        }
+    }
+
+    fun setBrakingSound(soundId: Int) {
+        viewModelScope.launch {
+            prefsRepo.setBrakingSound(soundId)
         }
     }
 
