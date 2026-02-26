@@ -26,12 +26,10 @@ data class BundledSound(
 )
 
 val BUNDLED_SOUNDS = listOf(
-    BundledSound(1, "Bell Ding", R.raw.bell_ding),
-    BundledSound(2, "Horn Short", R.raw.horn_short),
-    BundledSound(3, "Horn Loud", R.raw.horn_loud),
-    BundledSound(4, "Alarm", R.raw.alarm),
-    BundledSound(5, "Bicycle Bell", R.raw.bicycle_bell),
-    BundledSound(6, "Air Horn", R.raw.air_horn),
+    BundledSound(1, "Bicycle Bell", R.raw.bicycle_bell),
+    BundledSound(2, "Tram Bell", R.raw.tram_bell),
+    BundledSound(3, "Police Siren", R.raw.police),
+    BundledSound(4, "UFO", R.raw.ufo),
 )
 
 data class SoundAssignment(
@@ -44,7 +42,7 @@ data class AppSettings(
         ButtonPattern.SHORT_PRESS to 1,
         ButtonPattern.LONG_PRESS to 2,
         ButtonPattern.VERY_LONG_PRESS to 3,
-        ButtonPattern.REPEATED_PRESS to 6,
+        ButtonPattern.REPEATED_PRESS to 3,
     ),
     val emergencyContact: String = "",
     val crashThreshold: Float = 3.0f,
