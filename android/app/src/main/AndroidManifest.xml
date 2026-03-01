@@ -29,13 +29,22 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BikeHorn">
 
+        <!-- singleTop: prevents a second instance when the NFC intent arrives while app is open -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.BikeHorn">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Deep link: bikehorn://pair?addr=XX:XX:XX:XX:XX:XX  (written by Puck.js NFC tag) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="bikehorn" android:host="pair" />
             </intent-filter>
         </activity>
 

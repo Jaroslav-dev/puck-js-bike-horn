@@ -18,6 +18,7 @@ var shortPressCount = 0;
 var multiTapTimer = null;
 var lastCrashTime = 0;
 var connected = false;
+var batteryTimer = null;  // periodic battery report interval handle
 // Motion detection state
 var rollingAvg = 1.0;          // starts at 1g (device at rest)
 var lastMotionTime = 0;        // timestamp of last acceleration/braking event
@@ -102,12 +103,20 @@ NRF.on('connect', function() {
   connected = true;
   // Blink green LED
   digitalPulse(LED2, 1, 300);
+  // Send battery level once NUS is ready (brief delay ensures the channel is open)
+  setTimeout(function() { send({ t: "battery", v: E.getBattery() }); }, 1000);
+  // Refresh every 5 minutes so the app always shows a reasonably current level
+  batteryTimer = setInterval(function() {
+    send({ t: "battery", v: E.getBattery() });
+  }, 300000);
 });
 
 NRF.on('disconnect', function() {
   connected = false;
   // Blink red LED
   digitalPulse(LED1, 1, 300);
+  // Stop the periodic battery timer
+  if (batteryTimer) { clearInterval(batteryTimer); batteryTimer = null; }
 });
 
 // --- Initialization ---
@@ -121,6 +130,11 @@ function init() {
     Puck.accelOn(ACCEL_RATE);
     Puck.on('accel', onAccelData);
   }
+
+  // Advertise a deep link via NFC so tapping an Android phone opens the app
+  // and auto-connects without needing to scan. NRF.getAddress() returns e.g.
+  // "FB:A2:12:34:56:78 public" — split on space to drop the address-type suffix.
+  NRF.nfcURL("bikehorn://pair?addr=" + NRF.getAddress().split(" ")[0]);
 
   // Flash green LED to indicate firmware ready
   digitalPulse(LED2, 1, 100);

@@ -47,6 +47,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private var bleManager: BleManager? = null
 
+    // Holds a MAC address from an NFC intent that arrived before the BLE service was bound.
+    // Consumed once in attachBleManager() so the connection is initiated immediately after binding.
+    private var pendingConnectAddress: String? = null
+
     // Reactive state that updates when Bluetooth is toggled on/off
     private val _isBluetoothEnabled = MutableStateFlow(bluetoothAdapter?.isEnabled == true)
     val isBluetoothEnabled: StateFlow<Boolean> = _isBluetoothEnabled
@@ -64,6 +68,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Tracks whether a Bluetooth A2DP speaker is connected for audio output
     private val _bluetoothSpeakerName = MutableStateFlow<String?>(null)
     val bluetoothSpeakerName: StateFlow<String?> = _bluetoothSpeakerName
+
+    // Battery level of the connected BT speaker (null = no speaker, API < 33, or speaker doesn't report it)
+    private val _speakerBatteryLevel = MutableStateFlow<Int?>(null)
+    val speakerBatteryLevel: StateFlow<Int?> = _speakerBatteryLevel
 
     // Callback to detect Bluetooth audio devices connecting/disconnecting
     private val audioDeviceCallback = object : AudioDeviceCallback() {
@@ -93,11 +101,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Finds the first connected Bluetooth audio output device (A2DP speaker) */
+    /** Finds the first connected Bluetooth audio output device (A2DP speaker) and reads its battery */
     private fun updateBluetoothSpeakerState() {
         val btSpeaker = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
             .firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP }
         _bluetoothSpeakerName.value = btSpeaker?.productName?.toString()
+        // Battery level via AVRCP if available; null clears when speaker disconnects
+        _speakerBatteryLevel.value = if (btSpeaker != null) readSpeakerBattery(btSpeaker) else null
+    }
+
+    /**
+     * Reads battery level from the A2DP device via BluetoothDevice.getBatteryLevel().
+     * That method is a hidden API not in the public SDK, so we call it via reflection.
+     * Returns null if the device blocks hidden API access or the speaker doesn't report battery.
+     */
+    private fun readSpeakerBattery(device: AudioDeviceInfo): Int? {
+        return try {
+            val addr = device.address.takeIf { it.isNotEmpty() } ?: return null
+            val btDevice = bluetoothAdapter?.getRemoteDevice(addr) ?: return null
+            // Reflection: getBatteryLevel() is a hidden API; returns -1 if unsupported by speaker
+            val method = btDevice.javaClass.getMethod("getBatteryLevel")
+            val level = method.invoke(btDevice) as? Int ?: return null
+            if (level >= 0) level else null
+        } catch (_: Exception) {
+            null
+        }
     }
 
     val settings: StateFlow<AppSettings> = prefsRepo.settings
@@ -116,6 +144,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _lastEvent = MutableStateFlow<String?>(null)
     val lastEvent: StateFlow<String?> = _lastEvent
+
+    // Battery percentage reported by the Puck.js (null = not yet received / disconnected)
+    private val _batteryLevel = MutableStateFlow<Int?>(null)
+    val batteryLevel: StateFlow<Int?> = _batteryLevel
 
     // Mirror BleManager state into ViewModel-owned flows so Compose always collects
     // from a stable reference (avoids stale fallback flows when bleManager is null initially)
@@ -137,11 +169,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val crashAlertState: StateFlow<CrashAlertState> = crashAlertManager.state
 
+    /**
+     * Called from MainActivity when an NFC deep link arrives (bikehorn://pair?addr=XX:XX:XX:XX:XX:XX).
+     * If the BLE service is already bound, connects immediately; otherwise stores the address
+     * as pending so attachBleManager() can act on it once the service is ready.
+     */
+    fun connectByAddress(address: String) {
+        // Normalise: strip any trailing address-type suffix (e.g. " public") and uppercase
+        val cleanAddr = address.substringBefore(" ").uppercase().trim()
+        val device = bluetoothAdapter?.getRemoteDevice(cleanAddr) ?: return
+        if (bleManager != null) {
+            bleManager?.connect(device)
+        } else {
+            // Service not bound yet — store and consume once it binds
+            pendingConnectAddress = cleanAddr
+        }
+    }
+
     fun attachBleManager(manager: BleManager) {
         bleManager = manager
         // Forward BleManager state flows into ViewModel-owned flows so the UI updates
         viewModelScope.launch {
-            manager.connectionState.collect { _connectionState.value = it }
+            manager.connectionState.collect { state ->
+                _connectionState.value = state
+                // Clear stale battery reading when the Puck disconnects
+                if (state == ConnectionState.DISCONNECTED) _batteryLevel.value = null
+            }
         }
         viewModelScope.launch {
             manager.connectedDeviceName.collect { _connectedDeviceName.value = it }
@@ -153,6 +206,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             manager.events.collect { event ->
                 handleEvent(event)
             }
+        }
+        // If an NFC intent arrived before the service was bound, connect now
+        pendingConnectAddress?.let { addr ->
+            pendingConnectAddress = null
+            bluetoothAdapter?.getRemoteDevice(addr)?.let { manager.connect(it) }
         }
     }
 
@@ -191,6 +249,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             is PuckEvent.Braking -> {
                 _lastEvent.value = "Braking"
                 soundManager.play(settings.value.brakingSoundId)
+            }
+            is PuckEvent.BatteryLevel -> {
+                // Only store valid values (firmware sends -1 if reading failed)
+                if (event.percent in 0..100) _batteryLevel.value = event.percent
             }
         }
     }

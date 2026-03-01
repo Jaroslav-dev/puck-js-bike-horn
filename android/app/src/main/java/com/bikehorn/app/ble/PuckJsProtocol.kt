@@ -11,6 +11,8 @@ sealed class PuckEvent {
     // Motion events from accelerometer delta detection (Puck.js v2 only)
     data object Acceleration : PuckEvent()
     data object Braking : PuckEvent()
+    // Battery level report sent on connect and every 5 minutes
+    data class BatteryLevel(val percent: Int) : PuckEvent()
 }
 
 object PuckJsProtocol {
@@ -26,6 +28,7 @@ object PuckJsProtocol {
                 "crash" -> PuckEvent.Crash(json.optDouble("d", 0.0).toFloat())
                 "acceleration" -> PuckEvent.Acceleration
                 "braking" -> PuckEvent.Braking
+                "battery" -> PuckEvent.BatteryLevel(json.optInt("v", -1))
                 else -> null
             }
         } catch (_: Exception) {

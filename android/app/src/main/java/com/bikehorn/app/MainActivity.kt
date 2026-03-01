@@ -53,6 +53,8 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Handle NFC deep link when app was closed (cold launch via bikehorn://pair)
+        handleNfcPairIntent(intent)
 
         setContent {
             BikeHornTheme {
@@ -106,6 +108,26 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    /** Called by the OS when a new intent arrives while the activity is already on top (singleTop). */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // Handle NFC deep link when app was already open (bikehorn://pair arrives as new intent)
+        handleNfcPairIntent(intent)
+    }
+
+    /**
+     * Extracts the BLE MAC address from a bikehorn://pair?addr=XX:XX:XX:XX:XX:XX deep link
+     * and hands it to the ViewModel to initiate a direct connection (no BLE scan needed).
+     * Called from both onCreate (cold launch) and onNewIntent (foreground tap).
+     */
+    private fun handleNfcPairIntent(intent: Intent?) {
+        val data = intent?.data ?: return
+        if (data.scheme == "bikehorn" && data.host == "pair") {
+            val addr = data.getQueryParameter("addr") ?: return
+            viewModel.connectByAddress(addr)
         }
     }
 

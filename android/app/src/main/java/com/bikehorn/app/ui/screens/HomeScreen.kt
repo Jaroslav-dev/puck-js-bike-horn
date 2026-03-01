@@ -13,6 +13,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Battery0Bar
+import androidx.compose.material.icons.filled.Battery2Bar
+import androidx.compose.material.icons.filled.Battery3Bar
+import androidx.compose.material.icons.filled.Battery4Bar
+import androidx.compose.material.icons.filled.Battery5Bar
+import androidx.compose.material.icons.filled.BatteryAlert
+import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothConnected
 import androidx.compose.material.icons.filled.BluetoothSearching
@@ -43,9 +50,11 @@ import com.bikehorn.app.ble.ScannedDevice
 fun HomeScreen(
     connectionState: ConnectionState,
     deviceName: String?,
+    batteryLevel: Int?,   // 0-100 from Puck.js, null if not yet received
     lastEvent: String?,
     scannedDevices: List<ScannedDevice>,
     bluetoothSpeakerName: String?,
+    speakerBatteryLevel: Int?,   // 0-100 from AVRCP, null if speaker doesn't report it
     isBluetoothEnabled: Boolean,
     onScan: () -> Unit,
     onConnect: (ScannedDevice) -> Unit,
@@ -117,6 +126,33 @@ fun HomeScreen(
                             )
                         }
                     }
+                    // Battery indicator — only shown while connected and after first report
+                    if (connectionState == ConnectionState.CONNECTED && batteryLevel != null) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = when {
+                                    batteryLevel <= 5  -> Icons.Default.Battery0Bar
+                                    batteryLevel <= 15 -> Icons.Default.BatteryAlert
+                                    batteryLevel <= 30 -> Icons.Default.Battery2Bar
+                                    batteryLevel <= 50 -> Icons.Default.Battery3Bar
+                                    batteryLevel <= 70 -> Icons.Default.Battery4Bar
+                                    batteryLevel <= 90 -> Icons.Default.Battery5Bar
+                                    else               -> Icons.Default.BatteryFull
+                                },
+                                contentDescription = "Battery $batteryLevel%",
+                                modifier = Modifier.size(24.dp),
+                                tint = when {
+                                    batteryLevel <= 15 -> MaterialTheme.colorScheme.error
+                                    batteryLevel <= 30 -> MaterialTheme.colorScheme.tertiary
+                                    else               -> MaterialTheme.colorScheme.onPrimaryContainer
+                                },
+                            )
+                            Text(
+                                text = "$batteryLevel%",
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+                    }
                     if (connectionState == ConnectionState.SCANNING ||
                         connectionState == ConnectionState.CONNECTING
                     ) {
@@ -152,7 +188,7 @@ fun HomeScreen(
                         contentDescription = null,
                         modifier = Modifier.size(24.dp),
                     )
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = if (bluetoothSpeakerName != null)
                                 "Audio: $bluetoothSpeakerName"
@@ -166,6 +202,33 @@ fun HomeScreen(
                                 text = "Connect a Bluetooth speaker for louder horn",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    // Speaker battery indicator — only shown if the speaker reports it over AVRCP
+                    if (bluetoothSpeakerName != null && speakerBatteryLevel != null) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = when {
+                                    speakerBatteryLevel <= 5  -> Icons.Default.Battery0Bar
+                                    speakerBatteryLevel <= 15 -> Icons.Default.BatteryAlert
+                                    speakerBatteryLevel <= 30 -> Icons.Default.Battery2Bar
+                                    speakerBatteryLevel <= 50 -> Icons.Default.Battery3Bar
+                                    speakerBatteryLevel <= 70 -> Icons.Default.Battery4Bar
+                                    speakerBatteryLevel <= 90 -> Icons.Default.Battery5Bar
+                                    else                      -> Icons.Default.BatteryFull
+                                },
+                                contentDescription = "Speaker battery $speakerBatteryLevel%",
+                                modifier = Modifier.size(24.dp),
+                                tint = when {
+                                    speakerBatteryLevel <= 15 -> MaterialTheme.colorScheme.error
+                                    speakerBatteryLevel <= 30 -> MaterialTheme.colorScheme.tertiary
+                                    else -> MaterialTheme.colorScheme.onPrimaryContainer
+                                },
+                            )
+                            Text(
+                                text = "$speakerBatteryLevel%",
+                                style = MaterialTheme.typography.labelSmall,
                             )
                         }
                     }
