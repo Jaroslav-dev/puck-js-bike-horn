@@ -36,12 +36,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.bikehorn.app.data.AppSettings
-import com.bikehorn.app.data.BUNDLED_SOUNDS
+import com.bikehorn.app.data.SoundOption
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     settings: AppSettings,
+    soundCatalog: List<SoundOption>,       // bundled + custom sounds for dropdowns
     onEmergencyContactChange: (String) -> Unit,
     onCrashThresholdChange: (Float) -> Unit,
     onCountdownDurationChange: (Int) -> Unit,
@@ -166,7 +167,7 @@ fun SettingsScreen(
                     // Acceleration sound dropdown
                     Text("Acceleration", style = MaterialTheme.typography.labelMedium)
                     Spacer(Modifier.height(4.dp))
-                    val accelSound = BUNDLED_SOUNDS.find { it.id == settings.accelerationSoundId }
+                    val accelSound = soundCatalog.find { it.id == settings.accelerationSoundId }
                     var accelExpanded by remember { mutableStateOf(false) }
                     ExposedDropdownMenuBox(
                         expanded = accelExpanded,
@@ -186,7 +187,7 @@ fun SettingsScreen(
                             expanded = accelExpanded,
                             onDismissRequest = { accelExpanded = false },
                         ) {
-                            BUNDLED_SOUNDS.forEach { sound ->
+                            soundCatalog.forEach { sound ->
                                 DropdownMenuItem(
                                     text = { Text(sound.name) },
                                     onClick = {
@@ -203,7 +204,7 @@ fun SettingsScreen(
                     // Braking sound dropdown
                     Text("Braking", style = MaterialTheme.typography.labelMedium)
                     Spacer(Modifier.height(4.dp))
-                    val brakeSound = BUNDLED_SOUNDS.find { it.id == settings.brakingSoundId }
+                    val brakeSound = soundCatalog.find { it.id == settings.brakingSoundId }
                     var brakeExpanded by remember { mutableStateOf(false) }
                     ExposedDropdownMenuBox(
                         expanded = brakeExpanded,
@@ -223,7 +224,7 @@ fun SettingsScreen(
                             expanded = brakeExpanded,
                             onDismissRequest = { brakeExpanded = false },
                         ) {
-                            BUNDLED_SOUNDS.forEach { sound ->
+                            soundCatalog.forEach { sound ->
                                 DropdownMenuItem(
                                     text = { Text(sound.name) },
                                     onClick = {

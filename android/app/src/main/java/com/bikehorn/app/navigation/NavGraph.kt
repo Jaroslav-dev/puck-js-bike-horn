@@ -27,6 +27,10 @@ fun NavGraph(
     val lastEvent by viewModel.lastEvent.collectAsState()
     val scannedDevices by viewModel.scannedDevices.collectAsState()
     val settings by viewModel.settings.collectAsState()
+    // Combined bundled + custom sound list for dropdowns
+    val soundCatalog by viewModel.soundCatalog.collectAsState()
+    // Duration of each sound in ms (populated once SoundPool finishes loading each sound)
+    val soundDurations by viewModel.soundDurations.collectAsState()
     // Name of connected BT speaker, or null if audio routes to phone speaker
     val bluetoothSpeakerName by viewModel.bluetoothSpeakerName.collectAsState()
     // Reactive Bluetooth on/off state
@@ -52,8 +56,14 @@ fun NavGraph(
         composable(Routes.SOUNDS) {
             SoundAssignmentScreen(
                 assignments = settings.assignments,
+                soundCatalog = soundCatalog,
+                soundDurations = soundDurations,
+                customSounds = settings.customSounds,
                 onAssign = viewModel::assignSound,
                 onPreview = viewModel::previewSound,
+                onAddCustomSound = viewModel::addCustomSound,
+                onRemoveCustomSound = viewModel::removeCustomSound,
+                onRenameCustomSound = viewModel::renameCustomSound,
                 onBack = { navController.popBackStack() },
             )
         }
@@ -61,6 +71,7 @@ fun NavGraph(
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 settings = settings,
+                soundCatalog = soundCatalog,
                 onEmergencyContactChange = viewModel::setEmergencyContact,
                 onCrashThresholdChange = viewModel::setCrashThreshold,
                 onCountdownDurationChange = viewModel::setCountdownDuration,

@@ -11,8 +11,10 @@ import android.content.IntentFilter
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.provider.OpenableColumns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.bikehorn.app.ble.BleManager
@@ -22,12 +24,16 @@ import com.bikehorn.app.ble.ScannedDevice
 import com.bikehorn.app.crash.CrashAlertManager
 import com.bikehorn.app.crash.CrashAlertState
 import com.bikehorn.app.data.AppSettings
+import com.bikehorn.app.data.BUNDLED_SOUNDS
 import com.bikehorn.app.data.ButtonPattern
+import com.bikehorn.app.data.CustomSound
 import com.bikehorn.app.data.PreferencesRepo
+import com.bikehorn.app.data.SoundOption
 import com.bikehorn.app.sound.SoundManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -78,6 +84,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             bluetoothStateReceiver,
             IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
         )
+        // Load any previously saved custom sounds into SoundPool once settings are available.
+        // loadCustomSounds() is idempotent — it skips IDs that are already loaded.
+        viewModelScope.launch {
+            prefsRepo.settings.collect { s ->
+                soundManager.loadCustomSounds(s.customSounds)
+            }
+        }
     }
 
     /** Finds the first connected Bluetooth audio output device (A2DP speaker) */
@@ -89,6 +102,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val settings: StateFlow<AppSettings> = prefsRepo.settings
         .stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings())
+
+    // Sound durations in ms, populated as sounds finish loading into SoundPool
+    val soundDurations: StateFlow<Map<Int, Long>> = soundManager.durations
+
+    // Combined catalog of bundled + user-uploaded sounds for dropdown menus
+    val soundCatalog: StateFlow<List<SoundOption>> = prefsRepo.settings
+        .map { s ->
+            BUNDLED_SOUNDS.map { SoundOption(it.id, it.name) } +
+            s.customSounds.map { SoundOption(it.id, it.name) }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, BUNDLED_SOUNDS.map { SoundOption(it.id, it.name) })
 
     private val _lastEvent = MutableStateFlow<String?>(null)
     val lastEvent: StateFlow<String?> = _lastEvent
@@ -226,6 +250,61 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             prefsRepo.setBrakingSound(soundId)
         }
+    }
+
+    /**
+     * Adds a user-picked audio file as a custom sound.
+     * Takes a persistent URI permission so the file can be re-opened after app restarts.
+     */
+    fun addCustomSound(uri: Uri) {
+        val app = getApplication<Application>()
+        // Persist read permission so the URI survives app restarts.
+        // OpenDocument URIs always support this; wrapped in try-catch as a safety net.
+        try {
+            app.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        } catch (_: SecurityException) {
+            // URI doesn't support persistable permissions — the sound will work this session
+            // but won't survive an app restart. This shouldn't happen with OpenDocument.
+        }
+        // Extract a human-readable name from the URI (strips the file extension)
+        val name = resolveDisplayName(uri)
+        // Assign the next available custom sound ID (101, 102, …)
+        val id = (settings.value.customSounds.maxOfOrNull { it.id } ?: 100) + 1
+        val sound = CustomSound(id, name, uri.toString())
+        soundManager.loadCustomSound(id, uri)
+        viewModelScope.launch {
+            prefsRepo.saveCustomSounds(settings.value.customSounds + sound)
+        }
+    }
+
+    /** Removes a custom sound by ID. The SoundPool entry remains until the next app start. */
+    fun removeCustomSound(id: Int) {
+        viewModelScope.launch {
+            prefsRepo.saveCustomSounds(settings.value.customSounds.filter { it.id != id })
+        }
+    }
+
+    /** Updates the display name of a custom sound without changing its URI or ID. */
+    fun renameCustomSound(id: Int, newName: String) {
+        viewModelScope.launch {
+            val updated = settings.value.customSounds.map { sound ->
+                if (sound.id == id) sound.copy(name = newName.trim()) else sound
+            }
+            prefsRepo.saveCustomSounds(updated)
+        }
+    }
+
+    /** Queries ContentResolver for the file's display name, falling back to the URI path. */
+    private fun resolveDisplayName(uri: Uri): String {
+        val cursor = getApplication<Application>().contentResolver.query(
+            uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null
+        )
+        return cursor?.use {
+            if (it.moveToFirst()) {
+                it.getString(it.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
+                    .substringBeforeLast(".")  // drop extension
+            } else null
+        } ?: uri.lastPathSegment ?: "Custom Sound"
     }
 
     fun cancelCrashAlert() {

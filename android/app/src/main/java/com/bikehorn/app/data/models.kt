@@ -25,6 +25,16 @@ data class BundledSound(
     val resId: Int
 )
 
+/** A sound picked by the user from device storage. IDs start at 101. */
+data class CustomSound(
+    val id: Int,
+    val name: String,
+    val uri: String,  // persisted content:// URI string
+)
+
+/** Unified type used in dropdowns — covers both bundled and custom sounds. */
+data class SoundOption(val id: Int, val name: String)
+
 val BUNDLED_SOUNDS = listOf(
     BundledSound(1, "Bicycle Bell", R.raw.bicycle_bell),
     BundledSound(2, "Tram Bell", R.raw.tram_bell),
@@ -50,4 +60,6 @@ data class AppSettings(
     // Sounds played when the accelerometer detects forward acceleration or braking
     val accelerationSoundId: Int = 1,  // default: Bicycle Bell
     val brakingSoundId: Int = 2,       // default: Tram Bell
+    // User-uploaded sounds from device storage
+    val customSounds: List<CustomSound> = emptyList(),
 )

@@ -60,4 +60,9 @@ dependencies {
 
     implementation(libs.accompanist.permissions)
     implementation(libs.kotlinx.coroutines.android)
+
+    // Unit tests — run on the JVM, no device needed ("./gradlew test")
+    testImplementation(libs.junit)
+    // Real org.json implementation for unit tests (the Android SDK provides only stubs on JVM)
+    testImplementation(libs.org.json)
 }

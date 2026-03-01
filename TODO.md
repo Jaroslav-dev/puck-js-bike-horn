@@ -3,7 +3,7 @@
 ## Pre-Launch (Must Do)
 
 - [ ] Test on real Android phone with Puck.js hardware
-- [ ] Replace placeholder sine wave sound files with real audio (bell, horn, alarm, etc.)
+- [x] Replace placeholder sine wave sound files with real audio (bell, horn, alarm, etc.)
 - [ ] Verify BLE scanning and connection works reliably on real hardware
 - [ ] Test crash detection end-to-end (accelerometer → alert → SMS)
 - [ ] Test SMS sending with a real emergency contact number
@@ -19,9 +19,10 @@
 
 ## Testing
 
-- [ ] Add unit tests for `PuckJsProtocol` JSON parsing
-- [ ] Add unit tests for `MainViewModel` event routing
-- [ ] Add unit tests for `PreferencesRepo` persistence
+- [x] Add unit tests for `PuckJsProtocol` JSON parsing
+- [x] Add unit tests for `ButtonPattern` event type mapping
+- [ ] Add unit tests for `MainViewModel` event routing (needs Robolectric)
+- [ ] Add unit tests for `PreferencesRepo` persistence (needs Robolectric)
 - [ ] Add UI tests for CrashAlertScreen countdown flow
 - [ ] Add integration test for BLE scan → connect → event flow (with mocks)
 
@@ -37,9 +38,14 @@
 ## Sound System
 
 - [x] Detect connected Bluetooth speaker and show audio output status on HomeScreen
-- [ ] Support user-uploaded custom sound files (pick from device storage)
+- [x] Support user-uploaded custom sound files (pick from device storage)
+- [x] Rename custom sound files from within the app
+- [x] Add sound duration preview indicator
 - [ ] Add volume control per sound assignment
-- [ ] Add sound duration preview indicator
+
+## Button Patterns
+
+- [x] Replace time-based press patterns (short/long/very-long/repeated) with tap-count system (1 tap, 2 taps, 3 taps, long press) for faster triggering on a bike
 
 ## Crash Detection
 
@@ -50,6 +56,14 @@
 - [ ] Consider adding multiple emergency contacts support
 - [ ] Add configurable crash debounce time in settings (currently hardcoded 5s)
 
+## Motion Sounds (Puck.js v2 only)
+
+- [x] Detect acceleration and braking via accelerometer delta vs rolling average
+- [x] Play configurable sounds on acceleration and braking events
+- [x] Guard accelerometer code so firmware works on both Puck.js v1 and v2
+- [ ] Tune thresholds after real-world bike testing (currently ACCEL_THRESHOLD = 0.3g)
+- [ ] Consider combining gyroscope data to reduce false positives
+
 ## NFC Features
 
 - [ ] Tap-to-pair: use NFC to instantly open the app and connect to the Puck.js (skip BLE scanning)
@@ -57,6 +71,7 @@
 
 ## Firmware
 
+- [x] Fix invalid 12.5 Hz accelerometer rate — changed to 10 Hz (valid LIS3DH rates: 1, 10, 25, 50, 100, 200, 400)
 - [ ] Add battery level reporting over BLE
 - [ ] Add firmware version reporting over BLE
 - [ ] Make multi-tap window configurable via BLE command from app

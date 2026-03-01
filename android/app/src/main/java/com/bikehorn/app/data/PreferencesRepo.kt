@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import org.json.JSONArray
+import org.json.JSONObject
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -22,6 +24,8 @@ class PreferencesRepo(private val context: Context) {
         // Motion detection sound assignments
         val ACCELERATION_SOUND = intPreferencesKey("acceleration_sound")
         val BRAKING_SOUND = intPreferencesKey("braking_sound")
+        // User-uploaded custom sounds stored as a JSON array string
+        val CUSTOM_SOUNDS = stringPreferencesKey("custom_sounds")
         fun assignmentKey(pattern: ButtonPattern) =
             intPreferencesKey("assign_${pattern.name}")
     }
@@ -39,6 +43,7 @@ class PreferencesRepo(private val context: Context) {
             countdownDuration = prefs[Keys.COUNTDOWN_DURATION] ?: 10,
             accelerationSoundId = prefs[Keys.ACCELERATION_SOUND] ?: 1,
             brakingSoundId = prefs[Keys.BRAKING_SOUND] ?: 2,
+            customSounds = parseCustomSounds(prefs[Keys.CUSTOM_SOUNDS] ?: "[]"),
         )
     }
 
@@ -76,5 +81,30 @@ class PreferencesRepo(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[Keys.BRAKING_SOUND] = soundId
         }
+    }
+
+    suspend fun saveCustomSounds(sounds: List<CustomSound>) {
+        val array = JSONArray()
+        sounds.forEach { sound ->
+            array.put(JSONObject().apply {
+                put("id", sound.id)
+                put("name", sound.name)
+                put("uri", sound.uri)
+            })
+        }
+        context.dataStore.edit { prefs ->
+            prefs[Keys.CUSTOM_SOUNDS] = array.toString()
+        }
+    }
+
+    /** Deserializes the stored JSON array into a list of CustomSound. */
+    private fun parseCustomSounds(json: String): List<CustomSound> = try {
+        val array = JSONArray(json)
+        (0 until array.length()).map { i ->
+            val obj = array.getJSONObject(i)
+            CustomSound(obj.getInt("id"), obj.getString("name"), obj.getString("uri"))
+        }
+    } catch (_: Exception) {
+        emptyList()
     }
 }
