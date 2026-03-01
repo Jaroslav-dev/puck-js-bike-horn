@@ -3,10 +3,13 @@ package com.bikehorn.app.sound
 import android.content.Context
 import android.content.res.AssetFileDescriptor
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaMetadataRetriever
 import android.media.SoundPool
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import com.bikehorn.app.data.BUNDLED_SOUNDS
 import com.bikehorn.app.data.BundledSound
 import com.bikehorn.app.data.CustomSound
@@ -17,6 +20,7 @@ class SoundManager(private val context: Context) {
 
     private val soundPool: SoundPool
     private val loadedSounds = mutableMapOf<Int, Int>() // ourSoundId -> soundPoolId
+    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     // Sound durations in milliseconds, populated as sounds are loaded.
     // Exposed as a StateFlow so the UI can reactively show durations once they're known.
@@ -28,15 +32,29 @@ class SoundManager(private val context: Context) {
     // file descriptor number for the next open(), causing SoundPool to read the wrong file.
     private val pendingAfds = mutableMapOf<Int, AssetFileDescriptor>() // soundPoolId -> afd
 
-    init {
-        val attrs = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_MEDIA)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .build()
+    // Shared AudioAttributes for both SoundPool and AudioFocusRequest so the OS
+    // treats them as the same stream type.
+    private val audioAttrs = AudioAttributes.Builder()
+        .setUsage(AudioAttributes.USAGE_MEDIA)
+        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+        .build()
 
+    // AUDIOFOCUS_GAIN_TRANSIENT causes music apps (Spotify, etc.) to fully pause while
+    // a horn sound plays, then resume automatically once focus is released.
+    private val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+        .setAudioAttributes(audioAttrs)
+        .setOnAudioFocusChangeListener { /* nothing — we release focus promptly on our own schedule */ }
+        .build()
+
+    // Schedules focus release after the sound finishes. Kept as a field so a rapid second
+    // press can cancel the previous pending release before issuing a new one.
+    private val focusHandler = Handler(Looper.getMainLooper())
+    private var focusRelease: Runnable? = null
+
+    init {
         soundPool = SoundPool.Builder()
             .setMaxStreams(3)
-            .setAudioAttributes(attrs)
+            .setAudioAttributes(audioAttrs)
             .build()
 
         // Close each pending AFD once SoundPool has finished decoding that sound
@@ -59,13 +77,21 @@ class SoundManager(private val context: Context) {
 
     fun play(soundId: Int) {
         val poolId = loadedSounds[soundId] ?: return
-        // Play at max volume, normal rate
+        // Cancel any pending release from a prior play so we don't abandon focus too early
+        focusRelease?.let { focusHandler.removeCallbacks(it) }
+        // Requesting AUDIOFOCUS_GAIN_TRANSIENT causes music apps to pause; they resume when
+        // we call abandonAudioFocusRequest after the sound finishes.
+        audioManager.requestAudioFocus(focusRequest)
         soundPool.play(poolId, 1.0f, 1.0f, 1, 0, 1.0f)
+        // Release focus after sound duration + small buffer so music resumes cleanly
+        val durationMs = _durations.value[soundId] ?: 2000L
+        focusRelease = Runnable { audioManager.abandonAudioFocusRequest(focusRequest) }.also {
+            focusHandler.postDelayed(it, durationMs + 300L)
+        }
     }
 
     fun playAlarm(soundId: Int): Int {
         val poolId = loadedSounds[soundId] ?: return 0
-        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         audioManager.setStreamVolume(
             AudioManager.STREAM_MUSIC,
             audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
@@ -131,6 +157,9 @@ class SoundManager(private val context: Context) {
     }
 
     fun release() {
+        // Cancel any pending focus release and abandon focus immediately on shutdown
+        focusRelease?.let { focusHandler.removeCallbacks(it) }
+        audioManager.abandonAudioFocusRequest(focusRequest)
         // Close any AFDs that haven't been closed yet (sounds still decoding on shutdown)
         pendingAfds.values.forEach { it.close() }
         pendingAfds.clear()

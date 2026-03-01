@@ -15,6 +15,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.provider.OpenableColumns
+import android.view.KeyEvent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.bikehorn.app.ble.BleManager
@@ -27,6 +28,10 @@ import com.bikehorn.app.data.AppSettings
 import com.bikehorn.app.data.BUNDLED_SOUNDS
 import com.bikehorn.app.data.ButtonPattern
 import com.bikehorn.app.data.CustomSound
+import com.bikehorn.app.data.MEDIA_ACTION_NEXT
+import com.bikehorn.app.data.MEDIA_ACTION_PLAY_PAUSE
+import com.bikehorn.app.data.MEDIA_ACTION_PREVIOUS
+import com.bikehorn.app.data.MEDIA_ACTIONS
 import com.bikehorn.app.data.PreferencesRepo
 import com.bikehorn.app.data.SoundOption
 import com.bikehorn.app.sound.SoundManager
@@ -134,13 +139,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Sound durations in ms, populated as sounds finish loading into SoundPool
     val soundDurations: StateFlow<Map<Int, Long>> = soundManager.durations
 
-    // Combined catalog of bundled + user-uploaded sounds for dropdown menus
+    // Combined catalog of bundled sounds + user-uploaded sounds + media control actions
     val soundCatalog: StateFlow<List<SoundOption>> = prefsRepo.settings
         .map { s ->
             BUNDLED_SOUNDS.map { SoundOption(it.id, it.name) } +
-            s.customSounds.map { SoundOption(it.id, it.name) }
+            s.customSounds.map { SoundOption(it.id, it.name) } +
+            MEDIA_ACTIONS  // always shown last so media options are easy to find
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, BUNDLED_SOUNDS.map { SoundOption(it.id, it.name) })
+        .stateIn(viewModelScope, SharingStarted.Eagerly,
+            BUNDLED_SOUNDS.map { SoundOption(it.id, it.name) } + MEDIA_ACTIONS)
 
     private val _lastEvent = MutableStateFlow<String?>(null)
     val lastEvent: StateFlow<String?> = _lastEvent
@@ -259,7 +266,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun playForPattern(pattern: ButtonPattern) {
         val soundId = settings.value.assignments[pattern] ?: return
-        soundManager.play(soundId)
+        when (soundId) {
+            // Media control actions — dispatch standard key events to the active music app
+            MEDIA_ACTION_NEXT       -> dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_NEXT)
+            MEDIA_ACTION_PREVIOUS   -> dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+            MEDIA_ACTION_PLAY_PAUSE -> dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+            // Regular sounds — SoundManager requests transient audio focus so music pauses
+            // while the horn plays, then resumes automatically when focus is released
+            else -> soundManager.play(soundId)
+        }
+    }
+
+    /**
+     * Sends a media key press-and-release to whichever app currently holds audio focus
+     * (Spotify, YouTube Music, stock player, etc.). Works without any special permissions.
+     */
+    private fun dispatchMediaKey(keyCode: Int) {
+        audioManager.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
+        audioManager.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, keyCode))
     }
 
     fun startScan() {

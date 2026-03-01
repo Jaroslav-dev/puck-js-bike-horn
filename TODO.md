@@ -30,7 +30,7 @@
 
 - [ ] Add a mock/demo mode for testing without real Puck.js hardware
 - [ ] Add visual feedback when a sound plays (e.g. animation on HomeScreen)
-- [ ] Improve HomeScreen to show battery level of connected Puck.js
+- [x] Improve HomeScreen to show battery level of connected Puck.js
 - [ ] Add onboarding/first-run tutorial explaining button patterns
 - [ ] Add accessibility labels and content descriptions throughout UI
 - [ ] Add color-blind-friendly indicators (not just red/green for status)
@@ -66,13 +66,13 @@
 
 ## NFC Features
 
-- [ ] Tap-to-pair: use NFC to instantly open the app and connect to the Puck.js (skip BLE scanning)
+- [x] Tap-to-pair: use NFC to instantly open the app and connect to the Puck.js (skip BLE scanning)
 - [ ] Emergency info tag: after a crash is detected, bystanders can tap the Puck.js with their phone to see emergency contact info, medical details, and crash location
 
 ## Firmware
 
 - [x] Fix invalid 12.5 Hz accelerometer rate — changed to 10 Hz (valid LIS3DH rates: 1, 10, 25, 50, 100, 200, 400)
-- [ ] Add battery level reporting over BLE
+- [x] Add battery level reporting over BLE
 - [ ] Add firmware version reporting over BLE
 - [ ] Make multi-tap window configurable via BLE command from app
 - [ ] Add option to adjust accelerometer sensitivity from app

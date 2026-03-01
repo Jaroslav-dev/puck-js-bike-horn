@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.bikehorn.app.data.ButtonPattern
 import com.bikehorn.app.data.CustomSound
+import com.bikehorn.app.data.MEDIA_ACTIONS
 import com.bikehorn.app.data.SoundOption
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -188,8 +189,11 @@ fun SoundAssignmentScreen(
                                 }
                             }
 
-                            IconButton(onClick = { onPreview(currentSoundId) }) {
-                                Icon(Icons.Default.PlayArrow, contentDescription = "Preview")
+                            // Media action IDs are negative — nothing to preview
+                            if (currentSoundId >= 0) {
+                                IconButton(onClick = { onPreview(currentSoundId) }) {
+                                    Icon(Icons.Default.PlayArrow, contentDescription = "Preview")
+                                }
                             }
                         }
                     }
@@ -267,6 +271,40 @@ fun SoundAssignmentScreen(
                             Spacer(Modifier.padding(4.dp))
                             Text("Add Custom Sound")
                         }
+                    }
+                }
+            }
+
+            // Music playback control info card
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            "Music Playback Control",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "You can control your music player directly from the Puck.js button. " +
+                            "Select one of the media actions from any button's dropdown above.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        // List the available media actions so the user knows what to look for
+                        MEDIA_ACTIONS.forEach { action ->
+                            Text(
+                                text = "• ${action.name}",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Horn sounds automatically pause music while playing, then resume it " +
+                            "when the sound finishes — no extra setup needed.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }

@@ -32,7 +32,7 @@ data class CustomSound(
     val uri: String,  // persisted content:// URI string
 )
 
-/** Unified type used in dropdowns — covers both bundled and custom sounds. */
+/** Unified type used in dropdowns — covers bundled sounds, custom sounds, and media actions. */
 data class SoundOption(val id: Int, val name: String)
 
 val BUNDLED_SOUNDS = listOf(
@@ -40,6 +40,22 @@ val BUNDLED_SOUNDS = listOf(
     BundledSound(2, "Tram Bell", R.raw.tram_bell),
     BundledSound(3, "Police Siren", R.raw.police),
     BundledSound(4, "UFO", R.raw.ufo),
+)
+
+// Reserved negative IDs for media player control — never clash with real sound IDs (which are ≥ 1)
+const val MEDIA_ACTION_NEXT       = -1
+const val MEDIA_ACTION_PREVIOUS   = -2
+const val MEDIA_ACTION_PLAY_PAUSE = -3
+
+/**
+ * Media control actions that can be assigned to a button pattern in place of a sound.
+ * Dispatched as standard Android media key events, so they work with Spotify, YouTube Music,
+ * the stock player, or any app that registers a media session.
+ */
+val MEDIA_ACTIONS = listOf(
+    SoundOption(MEDIA_ACTION_NEXT,       "Next Track"),
+    SoundOption(MEDIA_ACTION_PREVIOUS,   "Previous Track"),
+    SoundOption(MEDIA_ACTION_PLAY_PAUSE, "Play / Pause"),
 )
 
 data class SoundAssignment(
