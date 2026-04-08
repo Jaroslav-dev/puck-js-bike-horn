@@ -40,6 +40,9 @@ val BUNDLED_SOUNDS = listOf(
     BundledSound(2, "Tram Bell", R.raw.tram_bell),
     BundledSound(3, "Police Siren", R.raw.police),
     BundledSound(4, "UFO", R.raw.ufo),
+    // 750Hz sine tone — this frequency penetrates noise-cancelling headphones,
+    // making it audible to pedestrians even with ANC earbuds at full volume.
+    BundledSound(5, "750Hz Pedestrian Bell", R.raw.bell_750hz),
 )
 
 // Reserved negative IDs for media player control — never clash with real sound IDs (which are ≥ 1)

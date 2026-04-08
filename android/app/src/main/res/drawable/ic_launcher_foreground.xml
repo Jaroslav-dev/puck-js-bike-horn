@@ -4,11 +4,44 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Bike bell icon -->
+
+    <!-- Bell knob on top — small oval -->
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M54,30 C44,30 36,38 36,48 L36,58 L32,62 L32,66 L76,66 L76,62 L72,58 L72,48 C72,38 64,30 54,30 Z" />
+        android:pathData="M35,22 a5,4 0 1 0 10,0 a5,4 0 1 0 -10,0" />
+
+    <!-- Bell dome body — cubic bezier arch from base edge to base edge -->
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M48,68 C48,72 50.7,75 54,75 C57.3,75 60,72 60,68 Z" />
+        android:pathData="M20,62 C20,34 60,34 60,62 Z" />
+
+    <!-- Bell rim at the bottom -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M16,62 L64,62 L64,70 L16,70 Z" />
+
+    <!-- Sound wave 1 — closest, small arc -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M63,53 Q71,62 63,72" />
+
+    <!-- Sound wave 2 — medium arc -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M69,47 Q80,62 69,76" />
+
+    <!-- Sound wave 3 — farthest, large arc -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M75,42 Q88,62 75,82" />
+
 </vector>

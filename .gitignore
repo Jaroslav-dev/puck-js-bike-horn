@@ -7,3 +7,8 @@ android/gradle/wrapper/
 android/gradlew
 android/gradlew.bat
 android/local.properties
+
+# Release signing — never commit the keystore or its passwords
+*.jks
+*.keystore
+keystore.properties
