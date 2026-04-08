@@ -12,3 +12,4 @@ android/local.properties
 *.jks
 *.keystore
 keystore.properties
+CLAUDE.md
